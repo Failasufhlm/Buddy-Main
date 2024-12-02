@@ -1,30 +1,12 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const { 
-    getAllPsychologists,
-    getNearbyPsychologists,
-    getPsychologistById,
-    addPsychologist,
-    updatePsychologist,
-    deletePsychologist
-} = require('./controllers');
+const drugstoreController = require("./controllers"); //
 
-// Get all psychologists
-router.get('/', getAllPsychologists);
+// Endpoint untuk mendapatkan semua Toko Obat
+router.get("/", drugstoreController.getAllDrugstores);
 
-// Get nearby psychologists based on user location
-router.post('/nearby', getNearbyPsychologists);
+// Endpoint untuk mencari Toko Obat berdasarkan obat yang dibutuhkan
+router.get("/medicine/:name", drugstoreController.getDrugstoresByMedicine);
 
-// Get specific psychologist
-router.get('/:id', getPsychologistById);
-
-// Add new psychologist
-router.post('/', addPsychologist);
-
-// Update psychologist
-router.put('/:id', updatePsychologist);
-
-// Delete psychologist
-router.delete('/:id', deletePsychologist);
-
+// Ekspor router untuk digunakan dalam aplikasi utama
 module.exports = router;
