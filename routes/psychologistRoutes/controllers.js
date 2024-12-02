@@ -1,158 +1,58 @@
-const admin = require("firebase-admin");
-const db = admin.firestore();
-const geolib = require("geolib");
+const express = require("express");
+const router = express.Router();
 
-// Get all psychologists
-const getAllPsychologists = async (req, res) => {
-  try {
-    const psychologistsSnapshot = await db.collection("psychologists").get();
-    const psychologists = [];
-    psychologistsSnapshot.forEach((doc) => {
-      psychologists.push({
-        id: doc.id,
-        ...doc.data(),
-      });
-    });
-    res.status(200).json({ psychologists });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// Contoh data Toko Obat (Drugstores) dengan daftar obat yang tersedia
+const drugstores = [
+  {
+    id: 1,
+    name: "Toko Obat Sehat",
+    address: "Jl. Sehat No. 1",
+    phone: "082134752949",
+    availableMedicines: ["Paracetamol", "Amoxicillin", "Vitamin C"],
+  },
+  {
+    id: 2,
+    name: "Apotek Keluarga",
+    address: "Jl. Keluarga No. 2",
+    phone: "082134752949",
+    availableMedicines: ["Ibuprofen", "Cetrizine"],
+  },
+  // Tambahkan lebih banyak data sesuai kebutuhan
+];
+
+// Fungsi untuk mendapatkan semua Toko Obat
+const getAllDrugstores = (req, res) => {
+  res.json(drugstores);
 };
 
-// Dapatkan psikolog terdekat
-const getNearbyPsychologists = async (req, res) => {
-  try {
-    const { latitude, longitude, radius = 10000, specialization, availability } = req.body;
+// Fungsi untuk menemukan Toko Obat berdasarkan obat yang dibutuhkan
+const getDrugstoresByMedicine = (req, res) => {
+  const medicineName = req.params.name;
 
-    const psychologistsSnapshot = await db.collection("psychologists").get();
-    const nearbyPsychologists = [];
-
-    psychologistsSnapshot.forEach((doc) => {
-      const psychologist = doc.data();
-      
-      // Calculate distance
-      const distance = geolib.getDistance(
-        { latitude, longitude },
-        {
-          latitude: psychologist.location.latitude,
-          longitude: psychologist.location.longitude,
-        }
-      );
-
-      // Filter by distance and additional criteria
-      if (distance <= radius && 
-          (!specialization || psychologist.specialization === specialization) &&
-          (!availability || psychologist.availability === availability)) {
-        
-        nearbyPsychologists.push({
-          id: doc.id,
-          ...psychologist,
-          distance,
-          distanceKm: (distance / 1000).toFixed(1),
-          estimatedTime: calculateEstimatedTime(distance)
-        });
-      }
-    });
-
-    // Sort by distance
-    nearbyPsychologists.sort((a, b) => a.distance - b.distance);
-
-    res.status(200).json({ 
-      psychologists: nearbyPsychologists,
-      total: nearbyPsychologists.length,
-      searchRadius: `${radius/1000}km`
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  // Validasi input: pastikan nama obat tidak kosong
+  if (!medicineName || medicineName.trim() === "") {
+    return res.status(400).send("Nama obat tidak boleh kosong.");
   }
+
+  // Mencari Toko Obat yang memiliki obat yang dibutuhkan
+  const availableDrugstores = drugstores.filter((drugstore) =>
+    drugstore.availableMedicines
+      .map((m) => m.toLowerCase())
+      .includes(medicineName.toLowerCase())
+  );
+
+  // Jika tidak ada Toko Obat yang ditemukan
+  if (availableDrugstores.length === 0) {
+    return res
+      .status(404)
+      .send("Toko Obat tidak ditemukan untuk obat yang diminta.");
+  }
+
+  res.json(availableDrugstores);
 };
 
-// Get psychologist by ID
-const getPsychologistById = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const doc = await db.collection("psychologists").doc(id).get();
-
-    if (!doc.exists) {
-      return res.status(404).json({ message: "Psychologist not found" });
-    }
-
-    res.status(200).json({
-      id: doc.id,
-      ...doc.data(),
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Add new psychologist
-const addPsychologist = async (req, res) => {
-  try {
-    const {
-      name,
-      specialization,
-      experience,
-      location,
-      contact,
-      availability,
-    } = req.body;
-
-    const docRef = await db.collection("psychologists").add({
-      name,
-      specialization,
-      experience,
-      location,
-      contact,
-      availability,
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
-
-    res.status(201).json({
-      id: docRef.id,
-      message: "Psychologist added successfully",
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Update psychologist
-const updatePsychologist = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updateData = req.body;
-
-    await db
-      .collection("psychologists")
-      .doc(id)
-      .update({
-        ...updateData,
-        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-
-    res.status(200).json({ message: "Psychologist updated successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// Delete psychologist
-const deletePsychologist = async (req, res) => {
-  try {
-    const { id } = req.params;
-    await db.collection("psychologists").doc(id).delete();
-    res.status(200).json({ message: "Psychologist deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
+// Ekspor fungsi-fungsi untuk digunakan dalam routes.js
 module.exports = {
-  getAllPsychologists,
-  getNearbyPsychologists,
-  getPsychologistById,
-  addPsychologist,
-  updatePsychologist,
-  deletePsychologist,
+  getAllDrugstores,
+  getDrugstoresByMedicine,
 };
