@@ -6,7 +6,7 @@ const admin = require("firebase-admin");
 // Route imports
 const authRoutes = require("./routes/authRoutes/authRoutes");
 const surveyRoutes = require("./routes/surveyRoutes/routes");
-const medicationRoutes = require("./routes/pharmaciesRoutes/routes");
+const drugStoreRoutes = require("./routes/drugStoreRoutes/routes"); 
 const journalRoutes = require("./routes/journalRoutes/routes");
 
 const app = express();
@@ -24,7 +24,7 @@ app.get("/", (req, res) => {
 // API Routes
 app.use("/api/auth", authRoutes); // Authentication endpoints
 app.use("/api/survey", surveyRoutes); // Mental health survey
-app.use("/api/pharmacies", medicationRoutes); // Medication finder
+app.use("/api/drug-store", drugStoreRoutes); // Find a Drug Store
 app.use("/api/journal", journalRoutes); // Journal analysis
 
 // Penanganan Kesalahan (Error Handling)
